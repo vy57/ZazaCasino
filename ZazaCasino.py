@@ -137,8 +137,7 @@ class Blackjack:
                 else:
                     print(Fore.YELLOW + "It's a tie!")
 
-            print("Your chip balance:", self.chips.total)
-            print("Your winnings:", self.chips.winnings)
+            self.update_balance()
 
             if self.chips.total == 0:
                 print(Fore.RED + "You ran out of chips. Game over.")
@@ -179,6 +178,12 @@ class Blackjack:
             aces -= 1
 
         return value
+
+    def update_balance(self):
+        self.chips.total += self.chips.winnings
+        self.chips.save_balance()
+        self.chips.winnings = 0
+
 
 class Mines:
     def __init__(self, chips):
@@ -253,6 +258,13 @@ class Mines:
                 self.cash_out()
                 break
 
+    def cash_out(self):
+        print(Fore.GREEN + "Cashing out...")
+        print("Your total winnings:", self.chips.winnings)
+        self.chips.total += self.chips.winnings
+        print("Your final chip balance:", self.chips.total)
+        self.chips.save_balance()
+
     def take_bet(self):
         while True:
             bet = int(input(Fore.YELLOW + "Place your bet: "))
@@ -300,7 +312,7 @@ def main():
         print("1. Blackjack")
         print("2. Mines")
         print("3. Check Balance")
-        print("4. Cash Out")
+        print("4. Exit")
         choice = input(Fore.YELLOW + "Enter your choice: ")
 
         if choice == '1':
