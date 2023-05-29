@@ -295,20 +295,23 @@ class Mines:
 def main():
     chips = Chips()
     chips.load_balance()
-    mines = Mines(chips)
     while True:
-        print(Fore.BLUE + "\n--- PyCasino ---")
+        print(Fore.BLUE + "\n--- ZazaCasino ---")
         print("1. Blackjack")
         print("2. Mines")
-        print("3. Cash Out")
+        print("3. Check Balance")
+        print("4. Cash Out")
         choice = input(Fore.YELLOW + "Enter your choice: ")
 
         if choice == '1':
             blackjack = Blackjack(chips)
             blackjack.play()
         elif choice == '2':
+            mines = Mines(chips)
             mines.play()
         elif choice == '3':
+            print(Fore.GREEN + "Your current chip balance:", chips.total)
+        elif choice == '4':
             mines.cash_out()
             break
         else:
