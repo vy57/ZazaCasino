@@ -163,14 +163,58 @@ class Blackjack:
 
         return value
 
-class Roulette:
+
+class CoinFlip:
     def __init__(self, chips):
         self.chips = chips
 
     def play(self):
-        print(Fore.GREEN + "Welcome to Roulette!")
-        print("This is a placeholder for the Roulette game.")
-        print("Please check back later for updates.")
+        print(Fore.GREEN + "Welcome to Coin Flip!")
+        print("Your chip balance:", self.chips.total)
+
+        while True:
+            self.take_bet()
+
+            choice = input(Fore.YELLOW + "Heads or Tails? (h/t): ")
+            if choice.lower() in ['h', 't']:
+                result = random.choice(['h', 't'])
+                print(Fore.CYAN + "Coin flips...")
+
+                if result == 'h':
+                    print(Fore.YELLOW + "Heads!")
+                else:
+                    print(Fore.YELLOW + "Tails!")
+
+                if choice.lower() == result:
+                    print(Fore.GREEN + "Congratulations! You win!")
+                    self.chips.total += self.chips.bet
+                else:
+                    print(Fore.RED + "Sorry, you lose.")
+                    self.chips.total -= self.chips.bet
+
+            print("Your chip balance:", self.chips.total)
+
+            if self.chips.total == 0:
+                print(Fore.RED + "You ran out of chips. Game over.")
+                break
+
+            choice = input(Fore.YELLOW + "Do you want to play again? (y/n): ")
+            if choice.lower() != 'y':
+                print(Fore.GREEN + "\nThanks for playing Coin Flip!")
+                break
+
+    def take_bet(self):
+        while True:
+            try:
+                bet = int(input(Fore.YELLOW + "Place your bet: "))
+                if bet > self.chips.total:
+                    print(Fore.RED + "Insufficient chips. Please place a valid bet.")
+                else:
+                    self.chips.bet = bet
+                    break
+            except ValueError:
+                print(Fore.RED + "Invalid input. Please enter a valid bet.")
+
 
 def play_game():
     print(Fore.GREEN + "Welcome to the Casino!")
@@ -180,22 +224,28 @@ def play_game():
     while True:
         print(Fore.CYAN + "\nWhich game would you like to play?")
         print("1. Blackjack")
-        print("2. Exit")
+        print("2. Coin Flip")
+        print("3. Exit")
 
-        choice = input("Enter your choice (1-2): ")
+        choice = input("Enter your choice (1-3): ")
 
         if choice == "1":
             blackjack = Blackjack(player_chips)
             blackjack.play()
         elif choice == "2":
+            coin_flip = CoinFlip(player_chips)
+            coin_flip.play()
+        elif choice == "3":
             print(Fore.GREEN + "\nThanks for playing!")
             break
         else:
             print(Fore.RED + "Invalid choice. Please enter a valid option.")
 
+
 def main():
     print(Fore.GREEN + "This game was made by Zazaman4000 \u00A9")
     play_game()
+
 
 if __name__ == "__main__":
     main()
