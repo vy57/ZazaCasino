@@ -1,4 +1,6 @@
 import random
+import os
+import json
 from colorama import init, Fore
 
 # Initialize Colorama
@@ -33,9 +35,23 @@ class Deck:
 
 
 class Chips:
-    def __init__(self, total=100):
-        self.total = total
+    def __init__(self):
+        self.total = 1000
         self.bet = 0
+        self.winnings = 0
+
+    def save_balance(self):
+        data = {
+            "total": self.total
+        }
+        with open("chips.json", "w") as file:
+            json.dump(data, file)
+
+    def load_balance(self):
+        if os.path.exists("chips.json"):
+            with open("chips.json", "r") as file:
+                data = json.load(file)
+                self.total = data.get("total", self.total)
 
 
 class Blackjack:
@@ -73,7 +89,7 @@ class Blackjack:
 
             if player_value == 21:
                 print(Fore.GREEN + "Congratulations! You got a Blackjack!")
-                self.chips.total += self.chips.bet * 2.5
+                self.chips.winnings += self.chips.bet * 2.5
             else:
                 while True:
                     choice = input(Fore.YELLOW + "\nDo you want to hit or stand? (h/s): ")
@@ -86,7 +102,7 @@ class Blackjack:
                         print("Total value:", player_value)
                         if player_value > 21:
                             print(Fore.RED + "Busted! You lose.")
-                            self.chips.total -= self.chips.bet
+                            self.chips.winnings -= self.chips.bet
                             break
                     elif choice.lower() == 's':
                         break
@@ -111,17 +127,18 @@ class Blackjack:
 
                 if dealer_value > 21:
                     print(Fore.GREEN + "Congratulations! Dealer busted. You win!")
-                    self.chips.total += self.chips.bet
+                    self.chips.winnings += self.chips.bet
                 elif dealer_value > player_value:
                     print(Fore.RED + "Sorry, you lose.")
-                    self.chips.total -= self.chips.bet
+                    self.chips.winnings -= self.chips.bet
                 elif dealer_value < player_value:
                     print(Fore.GREEN + "Congratulations! You win!")
-                    self.chips.total += self.chips.bet
+                    self.chips.winnings += self.chips.bet
                 else:
                     print(Fore.YELLOW + "It's a tie!")
 
             print("Your chip balance:", self.chips.total)
+            print("Your winnings:", self.chips.winnings)
 
             if self.chips.total == 0:
                 print(Fore.RED + "You ran out of chips. Game over.")
@@ -163,89 +180,139 @@ class Blackjack:
 
         return value
 
-
-class CoinFlip:
+class Mines:
     def __init__(self, chips):
         self.chips = chips
 
     def play(self):
-        print(Fore.GREEN + "Welcome to Coin Flip!")
+        print(Fore.GREEN + "Welcome to Mines!")
         print("Your chip balance:", self.chips.total)
 
         while True:
             self.take_bet()
 
-            choice = input(Fore.YELLOW + "Heads or Tails? (h/t): ")
-            if choice.lower() in ['h', 't']:
-                result = random.choice(['h', 't'])
-                print(Fore.CYAN + "Coin flips...")
+            rows = 5
+            cols = 5
+            num_mines = int(input(Fore.YELLOW + "Enter the number of mines to play with: "))
 
-                if result == 'h':
-                    print(Fore.YELLOW + "Heads!")
-                else:
-                    print(Fore.YELLOW + "Tails!")
+            grid = [[False for _ in range(cols)] for _ in range(rows)]
+            revealed = [[False for _ in range(cols)] for _ in range(rows)]
 
-                if choice.lower() == result:
-                    print(Fore.GREEN + "Congratulations! You win!")
-                    self.chips.total += self.chips.bet
-                else:
-                    print(Fore.RED + "Sorry, you lose.")
+            mines_placed = 0
+            while mines_placed < num_mines:
+                row = random.randint(0, rows - 1)
+                col = random.randint(0, cols - 1)
+                if not grid[row][col]:
+                    grid[row][col] = True
+                    mines_placed += 1
+
+            while True:
+                self.print_grid(grid, revealed)
+
+                row = int(input(Fore.YELLOW + "Enter the row coordinate: "))
+                col = int(input("Enter the column coordinate: "))
+
+                if not self.is_valid_coordinate(row, col, rows, cols):
+                    print(Fore.RED + "Invalid coordinate. Please enter valid coordinates.")
+                    continue
+
+                if revealed[row][col]:
+                    print(Fore.RED + "This cell has already been revealed. Please choose another.")
+                    continue
+
+                if grid[row][col]:
+                    print(Fore.RED + "Oh no! You hit a mine. Game over.")
                     self.chips.total -= self.chips.bet
+                    self.chips.winnings = 0
+                    break
+                else:
+                    print(Fore.GREEN + "Congratulations! You found a gem!")
+                    self.chips.winnings += self.chips.bet * 2
+                    print("Your winnings:", self.chips.winnings)
+                    choice = input(Fore.YELLOW + "Do you want to take your winnings? (y/n): ")
+                    if choice.lower() == 'y':
+                        self.cash_out()
+                        break
+
+                revealed[row][col] = True
+
+                if self.check_win(revealed):
+                    print(Fore.GREEN + "You have revealed all the safe cells. You win!")
+                    self.chips.total += self.chips.winnings
+                    break
 
             print("Your chip balance:", self.chips.total)
+            self.chips.save_balance()
 
             if self.chips.total == 0:
                 print(Fore.RED + "You ran out of chips. Game over.")
                 break
 
-            choice = input(Fore.YELLOW + "Do you want to play again? (y/n): ")
+            choice = input(Fore.YELLOW + "Do you want to continue playing Mines? (y/n): ")
             if choice.lower() != 'y':
-                print(Fore.GREEN + "\nThanks for playing Coin Flip!")
+                self.cash_out()
                 break
 
     def take_bet(self):
         while True:
-            try:
-                bet = int(input(Fore.YELLOW + "Place your bet: "))
-                if bet > self.chips.total:
-                    print(Fore.RED + "Insufficient chips. Please place a valid bet.")
+            bet = int(input(Fore.YELLOW + "Place your bet: "))
+            if 0 <= bet <= self.chips.total:
+                self.chips.bet = bet
+                break
+            else:
+                print(Fore.RED + "Invalid bet. Please enter a valid amount.")
+
+    def print_grid(self, grid, revealed):
+        print(Fore.BLUE + "\n--- Mines ---")
+        for row in range(len(grid)):
+            for col in range(len(grid[row])):
+                if revealed[row][col]:
+                    if grid[row][col]:
+                        print(Fore.RED + "X", end=' ')
+                    else:
+                        print(Fore.GREEN + "O", end=' ')
                 else:
-                    self.chips.bet = bet
-                    break
-            except ValueError:
-                print(Fore.RED + "Invalid input. Please enter a valid bet.")
+                    print(Fore.BLUE + "*", end=' ')
+            print()
 
+    def is_valid_coordinate(self, row, col, rows, cols):
+        return 0 <= row < rows and 0 <= col < cols
 
-def play_game():
-    print(Fore.GREEN + "Welcome to the Casino!")
+    def check_win(self, revealed):
+        for row in revealed:
+            if False in row:
+                return False
+        return True
 
-    player_chips = Chips(100)  # Start with 100 chips
-
-    while True:
-        print(Fore.CYAN + "\nWhich game would you like to play?")
-        print("1. Blackjack")
-        print("2. Coin Flip")
-        print("3. Exit")
-
-        choice = input("Enter your choice (1-3): ")
-
-        if choice == "1":
-            blackjack = Blackjack(player_chips)
-            blackjack.play()
-        elif choice == "2":
-            coin_flip = CoinFlip(player_chips)
-            coin_flip.play()
-        elif choice == "3":
-            print(Fore.GREEN + "\nThanks for playing!")
-            break
-        else:
-            print(Fore.RED + "Invalid choice. Please enter a valid option.")
+    def cash_out(self):
+        print(Fore.GREEN + "Cashing out...")
+        print("Your total winnings:", self.chips.winnings)
+        self.chips.total += self.chips.winnings
+        print("Your final chip balance:", self.chips.total)
+        self.chips.save_balance()
 
 
 def main():
-    print(Fore.GREEN + "This game was made by Zazaman4000 \u00A9")
-    play_game()
+    chips = Chips()
+    chips.load_balance()
+    mines = Mines(chips)
+    while True:
+        print(Fore.BLUE + "\n--- PyCasino ---")
+        print("1. Blackjack")
+        print("2. Mines")
+        print("3. Cash Out")
+        choice = input(Fore.YELLOW + "Enter your choice: ")
 
+        if choice == '1':
+            blackjack = Blackjack(chips)
+            blackjack.play()
+        elif choice == '2':
+            mines.play()
+        elif choice == '3':
+            mines.cash_out()
+            break
+        else:
+            print(Fore.RED + "Invalid choice. Please enter a valid option.")
 
 if __name__ == "__main__":
     main()
